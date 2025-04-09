@@ -41,8 +41,6 @@ class ClassificationEvaluator:
             'topic_accuracy': 1.0 if true_topic == pred_topic else 0.0,
             'true_topic': true_topic,
             'pred_topic': pred_topic,
-            'true_subtopic': true_subtopic,
-            'pred_subtopic': pred_subtopic
         }
     
     def evaluate_on_dataset(self, dataset_path, classify_function):
@@ -57,32 +55,29 @@ class ClassificationEvaluator:
         
         for item in tqdm(test_data, desc="Evaluating"):
             true_topic = item['topic']
-            true_subtopic = item.get('subtopic')
             true_text = item['text']
-
             pred_result = classify_function(true_text)
             pred_topic = pred_result['topic']
-            pred_subtopic = pred_result.get('subtopic')
-
+            
             text_metrics = {
                 'bleu': self.calculate_bleu(true_text, true_text),
                 'rouge': self.calculate_rouge(true_text, true_text),
                 'bertscore': self.calculate_bertscore(true_text, true_text)
             }
             results['text_similarity'].append(text_metrics)
-
+            
             classification_metrics = self.calculate_classification_metrics(
-                true_topic, pred_topic, true_subtopic, pred_subtopic
+                true_topic, pred_topic
             )
             results['classification'].append(classification_metrics)
-
+        
         true_topics = [r['true_topic'] for r in results['classification']]
         pred_topics = [r['pred_topic'] for r in results['classification']]
 
         topic_precision, topic_recall, topic_f1, _ = precision_recall_fscore_support(
             true_topics, pred_topics, average='weighted', zero_division=0
         )
-
+        
         aggregated_results = {
             'text_similarity': {
                 'bleu': np.mean([r['bleu'] for r in results['text_similarity']]),
